@@ -5,30 +5,34 @@ class Mesa
 	public $codigo;
 	public $nombre;
 	public $estado; // mozo->"cliente esperando pedido" mozo->"clientes comiendo" mozo->"clientes pagando"  socio->"cerrada"
-	public static $cod = 000;
 	
-	/*public function __construct($cod, $nom)
+	public function __construct($id_mesa = null)
 	{
-		$this->codigo = $cod;
-		$this->nombre = $nom;
-		$this->estado = "Cliente esperando pedido"; 
-	}*/
-
-	public function crearCodigo()
-	{
-		$this->cod = $this->cod++;
-		$this->codigo = substr($nombre, 0, 3); //obtengo las primeras 3 letras del nombre de la mesa
-		$this->codigo = $this->codigo . $this->cod; 
+		if(func_num_args() != 0)
+		{
+			$arrayMesas = Mesa::traerMesas();
+			$flag = false;
+			for ($i=0; $i < count($arrayMesas); $i++) { 
+				if($arrayMesas[$i]->codigo == $id_mesa)
+				{
+					$this->codigo = $arrayMesas[$i]->codigo;
+					$this->nombre = $arrayMesas[$i]->nombre;
+					//$this->estado = "Cliente esperando pedido"; 
+					$this->clienteEsperando();
+					$flag = true;
+				}
+			}
+			if ($flag == false) {
+				throw new Exception("No existe la mesa", 500);
+				
+			}
+		}
 	}
 
-
 	//consultar si se tiene que guardar en db las mesas cada vez que cambia de estado
-	public static function clienteEsperando($nom)
+	public function clienteEsperando()
 	{
-		$mesa = new Mesa();
-		$mesa->nombre = $nom;
-		$mesa->codigo = crearCodigo();
-		$mesa->estado = "Cliente esperando";
+		$this->estado = "Cliente esperando pedido";
 	}
 
 	public static function clienteComiendo()
@@ -44,6 +48,14 @@ class Mesa
 	public static function mesaCerrada()
 	{
 
+	}
+
+	public static function traerMesas()
+	{
+		$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
+		$consulta =$objetoAccesoDato->RetornarConsulta("select * from mesas");
+		$consulta->execute();			
+		return $consulta->fetchAll(PDO::FETCH_CLASS, "mesa");	
 	}
 
 }

@@ -2,7 +2,7 @@
 
 require_once "./clases/AutentificadorJWT.php";
 
-class MWparaAutentificar
+class MWusuarios
 {
  /**
    * @api {any} /MWparaAutenticar/  Verificar Usuario

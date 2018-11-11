@@ -27,11 +27,15 @@ $app->post('/login/', function (Request $request, Response $response) {
 $app->post('/producto/', function (Request $request, Response $response) {
   $ArrayDeParametros = $request->getParsedBody();
   return Producto::InsertarProducto($ArrayDeParametros);
-})->add(\MWparaAutentificar::class . ':VerificarUsuario');
-
+})->add(\MWusuarios::class . ':VerificarUsuario');
+/*
 $app->post('/pedido/', function (Request $request, Response $response){
   $ArrayDeParametros = $request->getParsedBody();
   return Pedido::tomarPedido($ArrayDeParametros);
+});
+*/
+$app->group('/pedido', function(){
+  $this->post('/', \Pedido::class . ':tomarPedido');
 });
 
 /* socio
