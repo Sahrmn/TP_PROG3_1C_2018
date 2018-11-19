@@ -85,6 +85,23 @@ class Usuario
 		return $retorno;
 	}
 
+	public static function SuspenderUsuario($request, $response, $args)
+	{
+		$id = $args['id'];
+		$respuesta = new stdclass();
+		//if(usuarioPDO::BorrarUsuarioBD($id) > 0) 
+		if(usuarioPDO::DarDeBajaUsuario($id) > 0)
+		{	
+			$respuesta->resultado = "Baja exitosa";
+		}
+		else
+		{
+			$respuesta->resultado = "Ocurrio un error al realizar la baja de usuario";	
+		}
+		$nueva = $response->withJson($respuesta, 200);
+		return $nueva;
+	}	
+
 	public static function BajaUsuario($request, $response, $args)
 	{
 		$id = $args['id'];

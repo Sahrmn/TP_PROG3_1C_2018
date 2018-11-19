@@ -35,6 +35,15 @@ class usuarioPDO
 		return $consulta->execute();
 	}	
 
+	public static function DarDeBajaUsuario($id)
+	{
+		$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
+		$consulta =$objetoAccesoDato->RetornarConsulta("
+			UPDATE usuarios 
+			set activo = 0
+			WHERE id = '$id'");
+		return $consulta->execute();
+	}	
 }
 
 

@@ -150,7 +150,6 @@ class Pedido
                 }
             }
         }
-
         $productosEnBD = producto::traerProductos();
         $productosDevueltos = array();
         switch ($tipo) {
