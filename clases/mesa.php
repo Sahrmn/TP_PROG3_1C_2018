@@ -1,107 +1,148 @@
 <?php 
-
+include_once 'mesaPDO.php'; 
 class Mesa
 {
 	public $codigo;
 	public $nombre;
-	public $estado; // mozo->"cliente esperando pedido" mozo->"clientes comiendo" mozo->"clientes pagando"  socio->"cerrada"
 
 	public static function RellenarDatos($id)
 	{
-		$arrayMesas = Mesa::traerMesas();
+		$arrayMesas = mesaPDO::traerMesas();
 		$flag = false;
 		for ($i=0; $i < count($arrayMesas); $i++) { 
 			if($arrayMesas[$i]->codigo == $id)
 			{
 				$this->codigo = $arrayMesas[$i]->codigo;
 				$this->nombre = $arrayMesas[$i]->nombre;
-				//$this->estado = "Cliente esperando pedido"; 
-				$this->clienteEsperando();
 				$flag = true;
 			}
 		}
 		if ($flag == false) {
-			throw new Exception("No existe la mesa", 500);
-			
+			$nueva = new stdclass();
+	       	$nueva->respuesta = "No existe la mesa";
+	        $retorno = json_encode($nueva, 500);
+	        return $retorno;
 		}	
 	}
 
 	public static function CrearMesa($request, $response)
 	{
 		$parametros = $request->getParsedBody();
-		$nom = $parametros['nombre'];
 
-		if($nom != null)
+		if(isset($parametros['nombre']) != null)
 		{
 			$mesa = new Mesa();
-			$mesa->nombre = $nom;
+			$mesa->nombre = $parametros['nombre'];
 			$mesa->crearCodigo();
 
-			if (Mesa::InsertarMesaBD($mesa) != null) {
+			if (mesaPDO::InsertarMesaBD($mesa) != null) {
 				$retorno = $response->withJson("Mesa creada correctamente", 200);
 			}
 			else
 			{
-				throw new Exception("Error al insertar en base de datos");
+				$nueva = new stdclass();
+	        	$nueva->respuesta = "Error al insertar en base de datos";
+	        	$retorno = json_encode($nueva, 200);
 			}
 		}	
 		else
 		{
-			throw new Exception("Parametros incorrectos y faltantes", 500);
+			$nueva = new stdclass();
+	        $nueva->respuesta = "Parametros incorrectos y faltantes";
+	       	$retorno = json_encode($nueva, 500);
 		}
 		return $retorno;
 	}
 
 	public function crearCodigo()
 	{
-		$arrayMesas = Mesa::traerMesas();
+		$arrayMesas = mesaPDO::traerMesas();
 		$ultimaMesa = $arrayMesas[count($arrayMesas)-1]->codigo;
 		$ultimaMesa = substr($ultimaMesa, -2); //devuelvo solo la parte del numero 
 		$this->codigo = "MES";
-		//$num = $ultimaMesa+1;
-		var_dump($this->codigo);
-		$this->codigo = $this->codigo . $ultimaMesa++; 
-		var_dump($this->codigo);
-		die();
+		$num = (integer)$ultimaMesa + 1;
+		if(strlen($num) < 2)
+		{
+			$num = "0" . $num;
+		}
+		$this->codigo = $this->codigo . $num; 
+		//var_dump($this->codigo);
 		$this->codigo = strtoupper($this->codigo); //convierto en mayuscula
 	}
 
-	public static function InsertarMesaBD($mesa)
+
+	//consultar si se tiene que guardar en db las mesas cada vez que cambia de estado -> si
+	
+
+	public static function BajaMesa($request, $response, $args)
 	{
-		$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso();
-        $consulta = $objetoAccesoDato->RetornarConsulta("INSERT into mesas (codigo, nombre) VALUES('$mesa->codigo', '$mesa->nombre')");
-		$consulta->execute();	
-		return $objetoAccesoDato->RetornarUltimoIdInsertado();
+		if(isset($args['id']) != null)
+		{
+			$respuesta = new stdclass();
+			if(mesaPDO::BorrarMesaBD($id) > 0) 
+			{	
+				$respuesta->resultado = "Baja exitosa";
+			}
+			else
+			{
+				$respuesta->resultado = "Ocurrio un error al realizar la baja de usuario";	
+			}
+			$nueva = $response->withJson($respuesta, 200);
+		}
+		else
+		{
+			$respuesta->resultado = "Se necesita un id";	
+			$nueva = $response->withJson($respuesta, 200);
+		}
+		return $nueva;
 	}
 
-	//consultar si se tiene que guardar en db las mesas cada vez que cambia de estado
-	public function clienteEsperando()
+	
+	public static function ModificarMesa($request, $response, $args)
 	{
-		$this->estado = "Cliente esperando pedido";
+		$param = $request->getParsedBody();
+		$respuesta = new stdclass();
+		if(isset($args['id']) != null)
+		{
+			//traigo mesa
+			$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
+	        $consulta =$objetoAccesoDato->RetornarConsulta("select * from mesas where codigo = :id");
+	        $consulta->bindValue(':id', $args['id'], PDO::PARAM_STR);
+			$consulta->execute();			
+			$mesa = $consulta->fetchObject('mesa'); 
+
+			if ($mesa != null) {
+				//modifico atributos 
+				if (isset($param['nombre'])) {
+					$mesa->nombre = $param['nombre'];
+				}
+				//guardo
+				if(mesaPDO::ModificarMesaBD($mesa))
+				{
+					//$nueva = $response->withJson($mesa, 200);
+					$respuesta->resultado = "Mesa modificada correctamente";
+					$nueva = $response->withJson($respuesta, 200);
+				}
+				else
+				{
+					$respuesta->resultado = "No se pudo guardar";
+					$nueva = $response->withJson($respuesta, 200);
+				}
+			}
+			else
+			{
+	        	$nueva->respuesta = "No existe la mesa";
+	        	$nueva = json_encode($nueva, 200);
+			}
+		}
+		else
+		{
+	       	$nueva->respuesta = "Se necesita un id";
+	        $nueva = json_encode($nueva, 200);
+		}
+		return $nueva;
 	}
 
-	public static function clienteComiendo()
-	{
-
-	}
-
-	public static function clientePagando()
-	{
-
-	}
-
-	public static function mesaCerrada()
-	{
-
-	}
-
-	public static function traerMesas()
-	{
-		$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
-		$consulta =$objetoAccesoDato->RetornarConsulta("select * from mesas");
-		$consulta->execute();			
-		return $consulta->fetchAll(PDO::FETCH_CLASS, "mesa");	
-	}
 
 }
 

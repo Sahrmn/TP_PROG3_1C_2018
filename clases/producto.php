@@ -21,16 +21,9 @@ class Producto
 		}
 	}
 
-
-	//llamo a metodo cada vez que se agrega un producto a la base de datos
-	public static function traerDB()
-	{
-		//consultar si nos manejamos con json o con la base de datos nomas
-	}
-
 	public static function InsertarProducto($param)
 	{
-		if($param['nombre'] != null && $param['precio_venta'] != null && $param['precio_compra'] != null && $param['atendido'] != null)
+		if(isset($param['nombre']) != null && isset($param['precio_venta']) != null && isset($param['precio_compra']) != null && isset($param['atendido']) != null)
 		{
 			$prod = new Producto($param['nombre'], $param['precio_venta'], $param['precio_compra'], $param['atendido']);
 			//guardo en bd
@@ -41,14 +34,15 @@ class Producto
 		}
 		else
 		{
-			throw new Exception("Faltan parametros o son incorrectos.");
+			$nueva = new stdclass();
+        	$nueva->respuesta = "Faltan parametros o son incorrectos.";
+        	$newResponse = json_encode($nueva, 200);
+        	return $newResponse;
 		}
 	}
 
 	public static function RellenarDatos($id, $cantidad)
 	{	
-		//var_dump($id);
-		//die();
 		$arrayProductos = Producto::traerProductos();
 		$flag = false;
 		for ($i=0; $i < count($arrayProductos); $i++) { 

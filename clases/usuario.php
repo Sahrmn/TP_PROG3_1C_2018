@@ -1,6 +1,6 @@
 <?php 
-
-class Empleado
+include_once 'usuarioPDO.php';
+class Usuario
 {
 	public $id;
 	public $nombre;
@@ -24,28 +24,30 @@ class Empleado
 	{
 		$datos = array('nombre' => $ArrayDeParametros['nombre'], 'clave' => $ArrayDeParametros['clave']);
         //verificar en bd
-        $employee = new Empleado($datos['nombre'], $datos['clave']);
+        $employee = new Usuario($datos['nombre'], $datos['clave']);
         $response = $employee->VerificarUsuario(); 
         if($response == false)
         {
-          throw new Exception("El empleado no existe.");
+        	$nueva = new stdclass();
+        	$nueva->respuesta = "El usuario no existe.";
+        	$newResponse = json_encode($nueva, 200);
         }
         else
         {  
-          $token= AutentificadorJWT::CrearToken($response); 
-          $newResponse = json_encode($token, 200); 
-          return $newResponse;
+          	$token = AutentificadorJWT::CrearToken($response); 
+          	$newResponse = json_encode($token, 200); 
         }
+        return $newResponse;
 	}
 
 	public function VerificarUsuario()
 	{
 		$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
-        $consulta =$objetoAccesoDato->RetornarConsulta("select id, nombre, tipo, activo from empleados where nombre = :nombreEmpleado AND clave = :clave");
-        $consulta->bindValue(':nombreEmpleado', $this->nombre, PDO::PARAM_STR);
+        $consulta =$objetoAccesoDato->RetornarConsulta("select id, nombre, tipo, activo from usuarios where nombre = :nombreUsuario AND clave = :clave");
+        $consulta->bindValue(':nombreUsuario', $this->nombre, PDO::PARAM_STR);
         $consulta->bindValue(':clave', $this->clave, PDO::PARAM_STR);
 		$consulta->execute();			
-		$employee = $consulta->fetchObject('empleado'); //nombre de la clase
+		$employee = $consulta->fetchObject('usuario'); //nombre de la clase
         if($employee != NULL)
         {
             $nueva = $employee;
@@ -60,54 +62,34 @@ class Empleado
 	public static function CrearUsuario($request, $response) //solo socios
 	{
 		$parametros = $request->getParsedBody();
-		$nom = $parametros['nombre'];
-		$clave = $parametros['clave'];
-		$tipo = $parametros['tipo'];
-		$activo = $parametros['activo'];
 
-		if($nom != null && $clave != null && $tipo != null && $activo != null)
+		if(isset($parametros['nombre']) != null && isset($parametros['clave']) != null && isset($parametros['tipo']) != null && isset($parametros['activo']) != null)
 		{
-			$employee = new Empleado($nom, $clave, $tipo, $activo);
-			if (Empleado::InsertarEmpleadoBD($employee) != null) {
+			$employee = new Usuario($parametros['nombre'], $parametros['clave'], $parametros['tipo'], $parametros['activo']);
+			if (usuarioPDO::InsertarUsuarioBD($employee) != null) {
 				$retorno = $response->withJson("Usuario creado", 200);
 			}
 			else
 			{
-				throw new Exception("Error al insertar en base de datos");
+				$nueva = new stdclass();
+	        	$nueva->respuesta = "Error al insertar en base de datos";
+	        	$retorno = json_encode($nueva, 200);
 			}
 		}	
 		else
 		{
-			throw new Exception("Parametros incorrectos y faltantes", 500);
+			$nueva = new stdclass();
+	       	$nueva->respuesta = "Parametros incorrectos o faltantes";
+	        $retorno = json_encode($nueva, 401);
 		}
 		return $retorno;
-	}
-
-	public static function InsertarEmpleadoBD($employee)
-	{
-		$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso();
-        $consulta = $objetoAccesoDato->RetornarConsulta("INSERT into empleados (nombre, clave, tipo, activo) VALUES('$employee->nombre','$employee->clave', '$employee->tipo', '$employee->activo')");
-		$consulta->execute();	
-		return $objetoAccesoDato->RetornarUltimoIdInsertado();
-	}
-
-	public static function BorrarUsuarioBD($id)
-	{	
-		$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
-		$consulta =$objetoAccesoDato->RetornarConsulta("
-			DELETE 
-			from empleados 				
-			WHERE id = :id");	
-		$consulta->bindValue(':id',$id, PDO::PARAM_INT);		
-		$consulta->execute();
-		return $consulta->rowCount();
 	}
 
 	public static function BajaUsuario($request, $response, $args)
 	{
 		$id = $args['id'];
 		$respuesta = new stdclass();
-		if(Empleado::BorrarUsuarioBD($id) > 0) 
+		if(usuarioPDO::BorrarUsuarioBD($id) > 0) 
 		{	
 			$respuesta->resultado = "Baja exitosa";
 		}
@@ -127,10 +109,10 @@ class Empleado
 		{
 			//traigo usuario
 			$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
-	        $consulta =$objetoAccesoDato->RetornarConsulta("select * from empleados where id = :id");
+	        $consulta =$objetoAccesoDato->RetornarConsulta("select * from usuarios where id = :id");
 	        $consulta->bindValue(':id', $id, PDO::PARAM_INT);
 			$consulta->execute();			
-			$employee = $consulta->fetchObject('empleado'); 
+			$employee = $consulta->fetchObject('usuario'); 
 
 			if ($employee != null) {
 				//modifico atributos del usuario
@@ -147,9 +129,12 @@ class Empleado
 					$employee->activo = $param['activo'];
 				}
 				//guardo
-				if(Empleado::ModificarUsuarioBD($employee))
+				$respuesta = new stdclass();
+				if(usuarioPDO::ModificarUsuarioBD($employee))
 				{
-					$nueva = $response->withJson($employee, 200);
+					//$nueva = $response->withJson($employee, 200);
+					$respuesta->resultado = "Usuario modificado correctamente";
+					$nueva = $response->withJson($respuesta, 200);
 				}
 				else
 				{
@@ -159,30 +144,24 @@ class Empleado
 			}
 			else
 			{
-				throw new Exception("No existe el usuario", 500);
-				
+				$nueva = new stdclass();
+	        	$nueva->respuesta = "No existe el usuario";
+	        	$nueva = json_encode($nueva, 200);
 			}
 		}
 		else
 		{
-			throw new Exception("Se necesita un id");
-			
+			$nueva = new stdclass();
+	       	$nueva->respuesta = "Se necesita un id";
+	        $nueva = json_encode($nueva, 200);
 		}
 		return $nueva;
 	}
 
-	public static function ModificarUsuarioBD($employee)
-	{
-		$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
-		$consulta =$objetoAccesoDato->RetornarConsulta("
-			UPDATE empleados 
-			set nombre = '$employee->nombre',
-			tipo = '$employee->tipo',
-			clave = '$employee->clave',
-			activo = '$employee->activo'
-			WHERE id = '$employee->id'");
-		return $consulta->execute();
-	}	
+	
+
+
+
 }
 
 
