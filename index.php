@@ -39,11 +39,14 @@ $app->group('/pedido', function(){
   //$this->get('/baja/{id}', \Pedido::class . ':BajaPedido'); consultar si es necesaria la baja de pedidos o solo se cancela
   //$this->post('/modificar/{id}', \Pedido::class . ':ModificarPedido'); consultar si se puede modificar un pedido
   $this->get('/ver/', \Pedido::class . ':VerProductosPedidos');
+  $this->post('/preparar/', \Pedido::class . ':PrepararPedido');
+  $this->post('/fin/', \Pedido::class . ':PedidoListo');
+  $this->get('/ver/{id}', \Pedido::class . ':VerPedidoCliente'); //solo clientes
 });
 
-
-//tiempo de pedido debe ir en pedido o producto?
 //
+
+//consultar si solo puede cambiar el pedido a listo si ese usuario tomo ese pedido
 
 
 $app->group('/usuario', function(){

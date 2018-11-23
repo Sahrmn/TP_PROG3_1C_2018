@@ -10,6 +10,14 @@ class PedidoPDO
 		return $consulta->fetchAll(PDO::FETCH_CLASS, "pedido");
 	}
 
+	public static function traerUnPedido($id)
+	{
+		$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
+		$consulta = $objetoAccesoDato->RetornarConsulta("select * from pedidos WHERE codigo = $id");
+		$consulta->execute();			
+		return $consulta->fetchAll(PDO::FETCH_CLASS, "pedido");
+	}
+
 	public static function InsertarPedido($pedido)
 	{
 		if(isset($pedido) != null)
@@ -64,13 +72,33 @@ class PedidoPDO
 		}
 	}
 
-	public static function traerPedidosProductos()
+	public static function ModificarEstadoPedidoBD($id, $estado)
 	{
+		$fecha = date("Y-m-d H:i:s");
 		$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
-		$consulta = $objetoAccesoDato->RetornarConsulta("select * from pedidos_productos");
-		$consulta->execute();			
-		return $consulta->fetchAll(PDO::FETCH_CLASS, "pedido_producto");
-	}
+		$consulta = $objetoAccesoDato->RetornarConsulta("
+			UPDATE pedidos 
+			set estado = '$estado',
+			fecha = '$fecha'
+			WHERE codigo = '$id'");
+		return $consulta->execute();
+	}	
+
+	public static function ModificarEstadoFinal($id, $demora)
+	{
+		$estado = "Listo para servir";
+		$hora = date("H:i:s");
+		$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
+		$consulta = $objetoAccesoDato->RetornarConsulta("
+			UPDATE pedidos 
+			set estado = '$estado',
+			demora = '$demora',
+			hora_fin = '$hora'
+			WHERE codigo = '$id'");
+		return $consulta->execute();
+	}	
+
+	
 }
 
 

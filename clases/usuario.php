@@ -73,14 +73,14 @@ class Usuario
 			{
 				$nueva = new stdclass();
 	        	$nueva->respuesta = "Error al insertar en base de datos";
-	        	$retorno = json_encode($nueva, 200);
+	        	$retorno = $response->withJson($nueva, 200);
 			}
 		}	
 		else
 		{
 			$nueva = new stdclass();
 	       	$nueva->respuesta = "Parametros incorrectos o faltantes";
-	        $retorno = json_encode($nueva, 401);
+	        $retorno = $response->withJson($nueva, 401);
 		}
 		return $retorno;
 	}
@@ -163,19 +163,17 @@ class Usuario
 			{
 				$nueva = new stdclass();
 	        	$nueva->respuesta = "No existe el usuario";
-	        	$nueva = json_encode($nueva, 200);
+	        	$nueva = $response->withJson($nueva, 200);
 			}
 		}
 		else
 		{
 			$nueva = new stdclass();
 	       	$nueva->respuesta = "Se necesita un id";
-	        $nueva = json_encode($nueva, 200);
+	        $nueva = $response->withJson($nueva, 200);
 		}
 		return $nueva;
 	}
-
-	
 
 
 

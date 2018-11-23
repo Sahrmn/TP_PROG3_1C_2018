@@ -7,8 +7,7 @@ class Pedido
 	public $nombre_cliente;
 	public $productos; //array de objetos tipo producto
     public $estado; // mozo->"cliente esperando pedido" mozo->"clientes comiendo" mozo->"clientes pagando"  socio->"cerrada"
-	/*public $tiempo_preparacion;
-	public $tiempo_inicial;*/
+	public $tiempo_calculado; //tiempo calculado del mayor tiempo de los productos
 	public $foto; //armar el metodo para guardar la foto 
 
 	public function crearCodigo()
@@ -33,14 +32,6 @@ class Pedido
         }
 	}
 
-	public static function TraerPedidos()
-	{
-		$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
-		$consulta =$objetoAccesoDato->RetornarConsulta("select * from pedidos");
-		$consulta->execute();			
-		return $consulta->fetchAll(PDO::FETCH_CLASS, "pedido");
-	}
-
     public static function tomarPedido($request, $response)
     {
     	$ArrayDeParametros = new stdclass();
@@ -53,7 +44,7 @@ class Pedido
     		$pedido->nombre_cliente = $ArrayDeParametros['cliente'];
     		$pedido->crearCodigo();
     		$pedido->productos = array();
-            $pedido->estado = "Cliente esperando pedido";
+            $pedido->estado = "Pendiente";
 
     		$mesa = new Mesa($ArrayDeParametros['id_mesa']);
 
@@ -134,18 +125,18 @@ class Pedido
         $arrayPedidosActivos = array();
 
         for ($i=0; $i < count($arrayPedidos); $i++) { //tomo solo los pedidos esperando ser atendidos
-            if($arrayPedidos[$i]->estado == "Cliente esperando pedido")
+            if($arrayPedidos[$i]->estado == "Pendiente" || $arrayPedidos[$i]->estado == "En preparacion")
             {
                 array_push($arrayPedidosActivos, $arrayPedidos[$i]);
             }
         }
         
-        $arrayPP = pedidoPDO::traerPedidosProductos();
+        $arrayPP = pedido_producto::traerPedidosProductos();
 
         $arrayProductosActivos = array();
         for ($i=0; $i < count($arrayPP); $i++) { //reviso todos los elementos de la tabla pedidos_productos
             for ($j=0; $j < count($arrayPedidosActivos); $j++) { //verifico que este contenido dentro de los pedidos activos
-                if ($arrayPP[$i]->id_pedido == $arrayPedidosActivos[$j]->codigo) {
+                if ($arrayPP[$i]->id_pedido == $arrayPedidosActivos[$j]->codigo && $arrayPP[$i]->estado == 0) {
                     array_push($arrayProductosActivos, $arrayPP[$i]);
                 }
             }
@@ -211,20 +202,132 @@ class Pedido
         return $productosDevueltos;
     }
 
-    public static function clienteComiendo()
+    public static function PrepararPedido($request, $response)
     {
+        $parametros = $request->getParsedBody();
+        $arrayConToken = $request->getHeader('token');
+        $token = $arrayConToken[0];
+
+        if (isset($parametros['id_pedido']) != null && isset($parametros['id_producto']) != null && isset($parametros['cantidad']) != null) {
+            $id_pedido = $parametros['id_pedido'];
+            $id_producto = $parametros['id_producto'];
+            $cantidad = $parametros['cantidad'];
+            $estado = true;
+
+            //calculo tiempo de preparacion
+            $payload = AutentificadorJWT::ObtenerData($token);
+            $tipo = $payload->tipo;
+            switch ($tipo) {
+                case 'cocinero':
+                    $tiempo = rand(5, 20)*$cantidad;
+                    break;
+                case 'bartender':
+                    $tiempo = rand(1, 7)*$cantidad;
+                    break;
+                case 'cervecero':
+                    $tiempo = rand(1, 3)*$cantidad;
+                    break;
+                default:
+                    $tiempo = rand(10, 15)*$cantidad;
+                    break;
+            }
+
+            $estado_pedido = "En preparacion";
+
+            //guardo tiempo en el tiempo_preparacion de pedido_producto
+            //actualizo estado del pedido en bd
+            if(pedido_producto::ModificarPedidoProducto($id_pedido, $id_producto, $estado, $tiempo) > 0 && pedidoPDO::ModificarEstadoPedidoBD($id_pedido, $estado_pedido) > 0)
+            {
+                $nueva = new stdclass();
+                $nueva->respuesta = "Pedido en preparacion";
+                $nueva = $response->withJson($nueva, 200);
+            }
+            else
+            {
+                $nueva = new stdclass();
+                $nueva->respuesta = "Ocurrio un error";
+                $nueva = $response->withJson($nueva, 200);
+            }
+        }
+        else
+        {
+            $nueva = new stdclass();
+            $nueva->respuesta = "Parametros incorrectos o faltantes";
+            $nueva = $response->withJson($nueva, 200);
+        }
+        return $nueva;
+    }
+
+    public static function PedidoListo($request, $response)
+    {
+        $parametros = $request->getParsedBody();
+        if(isset($parametros['id_pedido']) != null && isset($parametros['id_producto']) != null)
+        {
+            //cambio estado del pedido_producto a 2 (tomado y terminado)
+            if (isset($parametros['id_pedido']) != null && isset($parametros['id_producto']) != null) {
+                if (pedido_producto::ModificarPedidoProductoEstado($parametros['id_pedido'], $parametros['id_producto'], 2) > 0) {
+                    $nueva = new stdclass();
+                    $nueva->respuesta = "Listo para servir... esperando los otros productos";
+                    $nueva = $response->withJson($nueva, 200);
+                }
+                else
+                {
+                    $nueva = new stdclass();
+                    $nueva->respuesta = "Ocurrio un error";
+                    $nueva = $response->withJson($nueva, 200);
+                }
+            }
+
+            $arrayPedidosProductos = pedido_producto::traerPedidosProductos();
+            //obtengo todos los productos de ese pedido
+            $productosDelPedido = array();
+            for ($i=0; $i < count($arrayPedidosProductos); $i++) { 
+                if ($arrayPedidosProductos[$i]->id_pedido == $parametros['id_pedido']) {
+                    array_push($productosDelPedido, $arrayPedidosProductos[$i]);
+                }
+            }
+            //verifico si todos los productos estan tomados y listos
+            $flag = true;
+            for ($i=0; $i < count($productosDelPedido); $i++) { 
+                if ($productosDelPedido[$i]->estado == 0 || $productosDelPedido[$i]->estado == 1) {
+                    $flag = false;
+                }
+            }
+            if ($flag) {
+                //calculo tiempo de demora y guardo
+                $maxTiempo = $productosDelPedido[0]->tiempo_preparacion;
+                for ($i=0; $i < count($productosDelPedido); $i++) { 
+                    for ($j=0; $j < count($productosDelPedido); $j++) { 
+                        if ($productosDelPedido[$i]->tiempo_preparacion < $productosDelPedido[$j]->tiempo_preparacion) {
+                            $maxTiempo = $productosDelPedido[$j]->tiempo_preparacion;
+                            break;
+                        }
+                    }
+                }
+                //listo para servir
+                if(pedidoPDO::ModificarEstadoFinal($parametros['id_pedido'], $maxTiempo) != null)
+                {
+                    $nueva = new stdclass();
+                    $nueva->respuesta = "Pedido listo para servir";
+                    $nueva = $response->withJson($nueva, 200);
+                }
+                else
+                {
+                    $nueva = new stdclass();
+                    $nueva->respuesta = "Ocurrio un error";
+                    $nueva = $response->withJson($nueva, 200);
+                }
+            }
+            return $nueva;
+        }
 
     }
 
-    public static function clientePagando()
+    public static function VerPedidoCliente($request, $response, $args)
     {
-
+        $id_pedido = $args['id_pedido'];
     }
 
-    public static function mesaCerrada()
-    {
-
-    }
 
 
 }

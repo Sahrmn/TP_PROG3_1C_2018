@@ -21,9 +21,9 @@ class MWLog
 		$fecha = date('Y-m-d H:i:s');
 		if(MWLog::GuardarEnDB($user, $method, $rute, $fecha) != null)
 		{
-			$resp->log = "log creado";
-			$respuesta = $response->withJson($resp, 200);
-			//$respuesta = $next($request, $response);
+			//$resp->log = "log creado";
+			//$respuesta = $response->withJson($resp, 200);
+			$respuesta = $next($request, $response);
 		}
 		else
 		{

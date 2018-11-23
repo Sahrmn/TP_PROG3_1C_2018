@@ -4,6 +4,7 @@ class Producto
 {
 	public $id;
 	public $cantidad;
+	public $tiempo;
 	//lo demas se llena con data de la db
 	public $nombre;
 	public $precio;
@@ -72,6 +73,8 @@ class Producto
 		$consulta->execute();			
 		return $consulta->fetchAll(PDO::FETCH_CLASS, "producto");
 	}
+
+	
 }
 
 ?>
