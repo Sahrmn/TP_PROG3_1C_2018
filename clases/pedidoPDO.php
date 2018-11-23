@@ -13,7 +13,7 @@ class PedidoPDO
 	public static function traerUnPedido($id)
 	{
 		$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
-		$consulta = $objetoAccesoDato->RetornarConsulta("select * from pedidos WHERE codigo = $id");
+		$consulta = $objetoAccesoDato->RetornarConsulta("select * from pedidos WHERE codigo = '$id'");
 		$consulta->execute();			
 		return $consulta->fetchAll(PDO::FETCH_CLASS, "pedido");
 	}

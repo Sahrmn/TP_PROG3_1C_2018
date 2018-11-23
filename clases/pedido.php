@@ -3,11 +3,11 @@ require_once 'pedidoPDO.php';
 class Pedido
 {
 	public $codigo;
-	public $id_mesa;
+	public $codigo_mesa;
 	public $nombre_cliente;
 	public $productos; //array de objetos tipo producto
     public $estado; // mozo->"cliente esperando pedido" mozo->"clientes comiendo" mozo->"clientes pagando"  socio->"cerrada"
-	public $tiempo_calculado; //tiempo calculado del mayor tiempo de los productos
+	public $demora; //tiempo calculado del mayor tiempo de los productos
 	public $foto; //armar el metodo para guardar la foto 
 
 	public function crearCodigo()
@@ -325,7 +325,26 @@ class Pedido
 
     public static function VerPedidoCliente($request, $response, $args)
     {
-        $id_pedido = $args['id_pedido'];
+        if (isset($args['id']) != null) {
+            $id_pedido = $args['id'];
+            $pedido = pedidoPDO::traerUnPedido($id_pedido);
+            //var_dump($pedido);
+            //die();
+            /*$pedidoCliente = new Pedido();
+            $pedidoCliente->codigo = $pedido[0]->codigo;
+            $pedidoCliente->nombre_cliente = $pedido[0]->nombre_cliente;
+            $pedidoCliente->id_mesa = $pedido[0]->codigo_mesa;
+            $pedidoCliente->fecha = $pedido[0]->fecha;
+            
+            $nueva = $response->withJson($pedidoCliente, 200);*/
+            $nueva = $response->withJson($pedido, 200);
+        }
+        else
+        {
+            $retorno->respuesta = "No existe el pedido";
+            $nueva = $response->withJson($retorno, 200);
+        }
+        return $nueva;
     }
 
 

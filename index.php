@@ -41,7 +41,7 @@ $app->group('/pedido', function(){
   $this->get('/ver/', \Pedido::class . ':VerProductosPedidos');
   $this->post('/preparar/', \Pedido::class . ':PrepararPedido');
   $this->post('/fin/', \Pedido::class . ':PedidoListo');
-  $this->get('/ver/{id}', \Pedido::class . ':VerPedidoCliente'); //solo clientes
+  $this->get('/ver/{id}', \Pedido::class . ':VerPedidoCliente'); //usuarios no registrados
 });
 
 //

@@ -66,6 +66,16 @@ class MWusuarios
 			{
 				$nueva = $next($request, $response);		
 			}
+			//si es un usuario no registrado (cliente) y quiere ver el estado de su pedido -> pasa
+			else if($request->isGet())// && $request->getUri()->getPath() == '/pedido/ver/')
+			{
+				$path = $request->getUri()->getPath();
+				$path = explode('PD', $path);
+				
+				if ($path[0] == 'pedido/ver/') {
+					$nueva = $next($request, $response);		
+				}
+			}
 			else
 			{
 				$objDelaRespuesta->respuesta = "Solo usuarios registrados";
