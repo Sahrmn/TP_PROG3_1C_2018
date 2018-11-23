@@ -15,6 +15,25 @@ class pedido_producto
 		return $consulta->fetchAll(PDO::FETCH_CLASS, "pedido_producto");
 	}
 
+	public static function InsertarPedidoProducto($id_pedido, $producto)
+	{
+		if(isset($id_pedido) != null && isset($producto) != null)
+		{
+			$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
+	        $consulta =$objetoAccesoDato->RetornarConsulta("INSERT into pedidos_productos (id_pedido, id_producto, cantidad) VALUES('$id_pedido','$producto->id', '$producto->cantidad')");
+			$consulta->execute();	               
+			//return $objetoAccesoDato->RetornarUltimoIdInsertado();
+			return true;
+		}
+		else
+		{
+			$nueva = new stdclass();
+        	$nueva->respuesta = "Ocurrio un error";
+        	$newResponse = json_encode($nueva, 200);
+        	return $newResponse;
+		}
+	}
+
 	public static function ModificarPedidoProducto($id_pedido, $id_producto, $estado, $tiempo)
 	{
 		$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 

@@ -35,7 +35,7 @@ $app->post('/producto/', function (Request $request, Response $response) {
 
 
 $app->group('/pedido', function(){
-  $this->post('/', \Pedido::class . ':tomarPedido');
+  $this->post('/', \Pedido::class . ':tomarPedido')->add(\MWusuarios::class . ':AccesoMozo'); //solo mozo
   //$this->get('/baja/{id}', \Pedido::class . ':BajaPedido'); consultar si es necesaria la baja de pedidos o solo se cancela
   //$this->post('/modificar/{id}', \Pedido::class . ':ModificarPedido'); consultar si se puede modificar un pedido
   $this->get('/ver/', \Pedido::class . ':VerProductosPedidos');

@@ -84,4 +84,24 @@ class MWusuarios
 		}
 		return $nueva;
 	}
+
+	public function AccesoMozo($request, $response, $next) 
+	{
+		$arrayConToken = $request->getHeader('token');
+		$token = $arrayConToken[0];		
+
+		$payload = AutentificadorJWT::ObtenerData($token);
+		$tipo = $payload->tipo;
+
+		if ($tipo == 'mozo') {
+			$nueva = $next($request, $response);
+		}
+		else
+		{
+			$objDelaRespuesta->respuesta = "El pedido solo puede ser tomado por mozos";
+			$nueva = $response->withJson($objDelaRespuesta, 401);
+		}
+		return $nueva;
+	}
+
 }

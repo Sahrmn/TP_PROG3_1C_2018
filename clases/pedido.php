@@ -8,11 +8,11 @@ class Pedido
 	public $productos; //array de objetos tipo producto
     public $estado; // mozo->"cliente esperando pedido" mozo->"clientes comiendo" mozo->"clientes pagando"  socio->"cerrada"
 	public $demora; //tiempo calculado del mayor tiempo de los productos
-	public $foto; //armar el metodo para guardar la foto 
+    public $foto;
 
 	public function crearCodigo()
 	{
-		$arrayPedidos = Pedido::TraerPedidos();
+		$arrayPedidos = pedidoPDO::TraerPedidos();
 		$ultimoPedido = $arrayPedidos[count($arrayPedidos)-1]->codigo;
 		$ultimoPedido = substr($ultimoPedido, -3); //devuelvo solo la parte del numero de pedido
 
@@ -40,7 +40,7 @@ class Pedido
     	if(isset($ArrayDeParametros['id_mesa']) != null && isset($ArrayDeParametros['cliente']) != null && isset($ArrayDeParametros['id_producto1']) != null && isset($ArrayDeParametros['cantidad_producto1']) != null)
     	{
     		$pedido = new Pedido();
-    		$pedido->id_mesa = $ArrayDeParametros['id_mesa'];
+    		$pedido->codigo_mesa = $ArrayDeParametros['id_mesa'];
     		$pedido->nombre_cliente = $ArrayDeParametros['cliente'];
     		$pedido->crearCodigo();
     		$pedido->productos = array();
@@ -67,7 +67,6 @@ class Pedido
                 array_push($pedido->productos, $producto);  
             }
 
-
         	//verifico si existe foto
         	if($request->getUploadedFiles() != null)
         	{
@@ -80,7 +79,7 @@ class Pedido
         				mkdir($destino, 0777);
         			}
 
-        			$nombre = $pedido->nombre_cliente . "_" . $pedido->id_mesa . "_" . Pedido::getFecha();
+        			$nombre = $pedido->codigo . "_" . $pedido->id_mesa;
         			$extension = $archivo['foto']->getClientFilename();
         			$extension = explode(".", $extension);
         			$extension = $extension[1];
@@ -89,7 +88,7 @@ class Pedido
         		}
         	}
 
-        	$retorno = $response->withJson($pedido, 200);
+            $retorno = $response->withJson($pedido, 200);
         }
         else
         {
@@ -98,10 +97,8 @@ class Pedido
         }
 
         //inserto en la bd
-        if (pedidoPDO::InsertarPedido($pedido) == NULL) {
-            $respuesta->resultado = "Ocurrio un error al insertar en la base de datos";    
-            $retorno = $response->withJson($respuesta, 500);
-        }
+        pedidoPDO::InsertarPedido($pedido);
+
     	return $retorno;
     }
 
@@ -337,6 +334,18 @@ class Pedido
             $pedidoCliente->fecha = $pedido[0]->fecha;
             
             $nueva = $response->withJson($pedidoCliente, 200);*/
+
+            //veo si existe foto
+            $ruta1 = './fotos_mesas/' . $id_pedido . '_' . $pedido->codigo_mesa . '.jpg';
+            $ruta2 = './fotos_mesas/' . $id_pedido . '_' . $pedido->codigo_mesa . '.png';
+            if (isset($ruta1) != null) {
+                $pedido->foto = $ruta1;   
+            }
+            else if(isset($ruta2) != null)
+            {
+                $pedido->foto = $ruta2;                
+            }
+
             $nueva = $response->withJson($pedido, 200);
         }
         else
