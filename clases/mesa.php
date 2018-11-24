@@ -40,16 +40,14 @@ class Mesa
 			}
 			else
 			{
-				$nueva = new stdclass();
-	        	$nueva->respuesta = "Error al insertar en base de datos";
-	        	$retorno = json_encode($nueva, 200);
+				throw new Exception("Error SQL", 500);
 			}
 		}	
 		else
 		{
 			$nueva = new stdclass();
 	        $nueva->respuesta = "Parametros incorrectos y faltantes";
-	       	$retorno = json_encode($nueva, 500);
+	       	$retorno = $response->withJson($nueva, 500);
 		}
 		return $retorno;
 	}
@@ -85,7 +83,7 @@ class Mesa
 			}
 			else
 			{
-				$respuesta->resultado = "Ocurrio un error al realizar la baja de usuario";	
+				throw new Exception("Ocurrio un error al realizar la baja de usuario", 500);
 			}
 			$nueva = $response->withJson($respuesta, 200);
 		}
@@ -125,24 +123,42 @@ class Mesa
 				}
 				else
 				{
-					$respuesta->resultado = "No se pudo guardar";
-					$nueva = $response->withJson($respuesta, 200);
+					throw new Exception("No se pudo guardar", 500);
 				}
 			}
 			else
 			{
 	        	$nueva->respuesta = "No existe la mesa";
-	        	$nueva = json_encode($nueva, 200);
+	        	$nueva = $response->withJson($nueva, 200);
 			}
 		}
 		else
 		{
 	       	$nueva->respuesta = "Se necesita un id";
-	        $nueva = json_encode($nueva, 200);
+	        $nueva = $response->withJson($nueva, 200);
 		}
 		return $nueva;
 	}
 
+	public static function CerrarMesa($request, $response, $args)
+	{
+		if (isset($args['id']) != null) {
+			if (mesaPDO::ModificarEstado($args['id'], "Cerrada") != null) {
+				$nueva->respuesta = "Mesa cerrada";
+	        	$nueva = $response->withJson($nueva, 200);
+			}
+			else
+			{
+				throw new Exception("No se pudo modificar", 500);
+			}
+		}
+		else
+		{
+			$nueva->respuesta = "Se necesita un id";
+	        $nueva = $response->withJson($nueva, 200);
+		}
+		return $nueva;
+	}
 
 }
 

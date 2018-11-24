@@ -87,6 +87,10 @@ class Pedido
         			$archivo['foto']->moveTo($destino . $nombre . "." . $extension);
         		}
         	}
+            //modifico estado de mesa
+            if (mesaPDO::ModificarEstado($pedido->codigo_mesa, "Clientes esperando pedido") == null) {
+                throw new Exception("No se pudo guardar", 500);
+            }
 
             $retorno = $response->withJson($pedido, 200);
         }
@@ -216,39 +220,36 @@ class Pedido
             $tipo = $payload->tipo;
             switch ($tipo) {
                 case 'cocinero':
-                    $tiempo = rand(5, 20)*$cantidad;
+                    $tiempo = 15*$cantidad;
                     break;
                 case 'bartender':
-                    $tiempo = rand(1, 7)*$cantidad;
+                    $tiempo = 5*$cantidad;
                     break;
                 case 'cervecero':
-                    $tiempo = rand(1, 3)*$cantidad;
+                    $tiempo = 3*$cantidad;
                     break;
                 default:
-                    $tiempo = rand(10, 15)*$cantidad;
+                    $tiempo = rand(5, 15)*$cantidad;
                     break;
             }
+            $tiempo_demora = rand(5, 20)*$cantidad
 
             $estado_pedido = "En preparacion";
 
             //guardo tiempo en el tiempo_preparacion de pedido_producto
             //actualizo estado del pedido en bd
-            if(pedido_producto::ModificarPedidoProducto($id_pedido, $id_producto, $estado, $tiempo) > 0 && pedidoPDO::ModificarEstadoPedidoBD($id_pedido, $estado_pedido) > 0)
+            if(pedido_producto::ModificarPedidoProducto($id_pedido, $id_producto, $estado, $tiempo, $tiempo_preparacion) > 0 && pedidoPDO::ModificarEstadoPedidoBD($id_pedido, $estado_pedido) > 0)
             {
-                $nueva = new stdclass();
                 $nueva->respuesta = "Pedido en preparacion";
                 $nueva = $response->withJson($nueva, 200);
             }
             else
             {
-                $nueva = new stdclass();
-                $nueva->respuesta = "Ocurrio un error";
-                $nueva = $response->withJson($nueva, 200);
+                throw new Exception("No se pudo guardar", 500);
             }
         }
         else
         {
-            $nueva = new stdclass();
             $nueva->respuesta = "Parametros incorrectos o faltantes";
             $nueva = $response->withJson($nueva, 200);
         }
@@ -269,9 +270,7 @@ class Pedido
                 }
                 else
                 {
-                    $nueva = new stdclass();
-                    $nueva->respuesta = "Ocurrio un error";
-                    $nueva = $response->withJson($nueva, 200);
+                    throw new Exception("No se pudo guardar", 500);
                 }
             }
 
@@ -292,11 +291,13 @@ class Pedido
             }
             if ($flag) {
                 //calculo tiempo de demora y guardo
-                $maxTiempo = $productosDelPedido[0]->tiempo_preparacion;
+                $maxTiempo = $productosDelPedido[0]->tiempo_preparacion + $productosDelPedido[0]->demora_empleado;
                 for ($i=0; $i < count($productosDelPedido); $i++) { 
                     for ($j=0; $j < count($productosDelPedido); $j++) { 
-                        if ($productosDelPedido[$i]->tiempo_preparacion < $productosDelPedido[$j]->tiempo_preparacion) {
-                            $maxTiempo = $productosDelPedido[$j]->tiempo_preparacion;
+                        $t1 = $productosDelPedido[$i]->tiempo_preparacion + $productosDelPedido[$i]->demora_empleado;
+                        $t2 = $productosDelPedido[$j]->tiempo_preparacion + $productosDelPedido[$j]->demora_empleado;
+                        if ($t1 < $t2) {
+                            $maxTiempo = $t2;
                             break;
                         }
                     }
@@ -310,9 +311,7 @@ class Pedido
                 }
                 else
                 {
-                    $nueva = new stdclass();
-                    $nueva->respuesta = "Ocurrio un error";
-                    $nueva = $response->withJson($nueva, 200);
+                    throw new Exception("No se pudo guardar", 500);
                 }
             }
             return $nueva;
@@ -356,7 +355,80 @@ class Pedido
         return $nueva;
     }
 
+    public static function CancelarPedido($request, $response, $args)
+    {
+        if (isset($args['id']) != null) {
+            $id_pedido = $args['id'];
+            if(pedidoPDO::ModificarEstadoPedidoBD($id_pedido, "Cancelado") != null)
+            {
+                $nueva->respuesta = "Pedido Cancelado.";
+                $nueva = $response->withJson($nueva, 200);
+            }
+            else
+            {
+                throw new Exception("No se pudo guardar", 500);
+            }
+        }
+        else
+        {
+            $retorno->respuesta = "Id faltante";
+            $nueva = $response->withJson($retorno, 200);
+        }
+        return $nueva;
+    }
 
+    public static function DespacharPedido($request, $response, $args)
+    {
+        if (isset($args['id']) != null) {
+            $id_pedido = $args['id'];
+            $pedido = pedidoPDO::traerUnPedido($id_pedido);
+            $codigo_mesa = $pedido->codigo_mesa;
+
+            if (mesaPDO::ModificarEstado($codigo_mesa, "Clientes comiendo") != null) {
+                $retorno->respuesta = "Pedido despachado.";
+                $nueva = $response->withJson($retorno, 200);
+            }
+            else
+            {
+                throw new Exception("No se pudo guardar", 500);
+            }
+        }
+        else
+        {
+            $retorno->respuesta = "Id faltante";
+            $nueva = $response->withJson($retorno, 200);
+        }
+        return $nueva;
+    }
+
+    public static function CobrarPedido($request, $response, $args)
+    {
+        if (isset($args['id']) != null) {
+            $id_pedido = $args['id'];
+            $sumatoria = 0;
+
+            $pp = pedido_producto::traerPedidosProductos();
+            for ($i=0; $i < count($pp); $i++) { 
+                if ($pp[$i]->id_pedido == $id_pedido) {
+                    $prod = producto::traerUno($pp[$i]->id_producto);
+                    $sumatoria += $prod->precio * $pp[$i]->cantidad;
+                }
+            }
+            //cambio estado de la mesa
+            $pedido = pedidoPDO::traerUnPedido($id_pedido);
+            if (mesaPDO::ModificarEstado($pedido->codigo_mesa, "Clientes pagando") == null) {
+                throw new Exception("No se pudo guardar", 500);
+            }
+
+            $nueva = $response->withJson($sumatoria, 200);
+        }
+        else
+        {
+            $retorno->respuesta = "Id faltante";
+            $nueva = $response->withJson($retorno, 200);
+        }
+        return $nueva;
+    }
 
 }
 

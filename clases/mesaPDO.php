@@ -39,6 +39,16 @@ class mesaPDO
 			WHERE codigo = '$mesa->codigo'");
 		return $consulta->execute();
 	}
+
+	public static function ModificarEstado($id, $estado)
+	{
+		$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
+		$consulta =$objetoAccesoDato->RetornarConsulta("
+			UPDATE mesas 
+			set estado = '$estado'
+			WHERE codigo = '$id'");
+		return $consulta->execute();
+	}
 }
 
 

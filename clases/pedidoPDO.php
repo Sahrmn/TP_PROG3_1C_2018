@@ -52,12 +52,11 @@ class PedidoPDO
 
 	public static function ModificarEstadoPedidoBD($id, $estado)
 	{
-		$fecha = date("Y-m-d H:i:s");
+		//$fecha = date("Y-m-d H:i:s");
 		$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
 		$consulta = $objetoAccesoDato->RetornarConsulta("
 			UPDATE pedidos 
-			set estado = '$estado',
-			fecha = '$fecha'
+			set estado = '$estado'
 			WHERE codigo = '$id'");
 		return $consulta->execute();
 	}	

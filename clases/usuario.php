@@ -71,9 +71,7 @@ class Usuario
 			}
 			else
 			{
-				$nueva = new stdclass();
-	        	$nueva->respuesta = "Error al insertar en base de datos";
-	        	$retorno = $response->withJson($nueva, 200);
+	        	throw new Exception("Error al insertar en base de datos", 500);
 			}
 		}	
 		else
@@ -96,7 +94,7 @@ class Usuario
 		}
 		else
 		{
-			$respuesta->resultado = "Ocurrio un error al realizar la baja de usuario";	
+			throw new Exception("Ocurrio un error", 500);
 		}
 		$nueva = $response->withJson($respuesta, 200);
 		return $nueva;
@@ -112,7 +110,7 @@ class Usuario
 		}
 		else
 		{
-			$respuesta->resultado = "Ocurrio un error al realizar la baja de usuario";	
+			throw new Exception("Ocurrio un error", 500);
 		}
 		$nueva = $response->withJson($respuesta, 200);
 		return $nueva;
@@ -155,8 +153,7 @@ class Usuario
 				}
 				else
 				{
-					$respuesta->resultado = "No se pudo guardar el usuario";
-					$nueva = $response->withJson($respuesta, 200);
+					throw new Exception("Error al insertar en base de datos", 500);
 				}
 			}
 			else

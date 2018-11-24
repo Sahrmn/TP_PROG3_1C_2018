@@ -28,19 +28,20 @@ class pedido_producto
 		else
 		{
 			$nueva = new stdclass();
-        	$nueva->respuesta = "Ocurrio un error";
+        	$nueva->respuesta = "Parametros faltantes";
         	$newResponse = json_encode($nueva, 200);
         	return $newResponse;
 		}
 	}
 
-	public static function ModificarPedidoProducto($id_pedido, $id_producto, $estado, $tiempo)
+	public static function ModificarPedidoProducto($id_pedido, $id_producto, $estado, $tiempo, $demora)
 	{
 		$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
 		$consulta =$objetoAccesoDato->RetornarConsulta("
 			UPDATE pedidos_productos 
 			set estado = '$estado',
-			tiempo_preparacion = '$tiempo'
+			tiempo_preparacion = '$tiempo',
+			demora_empleado = '$demora'
 			WHERE id_pedido = '$id_pedido' AND id_producto = '$id_producto'");
 		return $consulta->execute();
 	}

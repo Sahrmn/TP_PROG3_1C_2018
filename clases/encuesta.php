@@ -19,6 +19,37 @@ class Encuesta
 		$this->comentarios = $coments;
 	}
 
+	public static function CargarEncuesta($request, $response, $args)
+	{
+		if (isset($args['id_pedido']) != null) {
+			$id_pedido = $args['id_pedido'];
+			$param = $request->getParsedBody();
+			if (isset($param['p_mesa']) != null && isset($param['p_restaurante']) != null && isset($param['p_mozo']) != null && isset($param['p_cocinero']) != null && isset($param['comentarios']) != null) {
+				$encuesta = new Encuesta($id_pedido, $param['p_mesa'], $param['p_restaurante'], $param['p_mozo'], $param['p_cocinero'], $param['comentarios']);
+				//guardo
+				if (encuestaPDO::Insertar($encuesta) > 0) {
+					$nueva->respuesta = "Encuesta guardada.";
+        			$newResponse = $request->withJson($nueva, 200);		
+				}
+				else
+				{
+					throw new Exception("Ocurrio un error", 500);
+				}
+			}
+			else
+			{
+				$nueva->respuesta = "Paramatros faltantes o incorrectos.";
+        		$newResponse = $request->withJson($nueva, 200);
+			}
+		}
+		else
+		{
+			$nueva->respuesta = "Id faltante.";
+        	$newResponse = $request->withJson($nueva, 200);
+		}
+		return $newResponse;
+	}
+
 }
 
 ?>

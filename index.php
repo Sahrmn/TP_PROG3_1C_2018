@@ -28,25 +28,22 @@ $app->post('/login/', function (Request $request, Response $response) {
 });
 
 
-$app->post('/producto/', function (Request $request, Response $response) {
-  $ArrayDeParametros = $request->getParsedBody();
-  return Producto::InsertarProducto($ArrayDeParametros);
+$app->group('/producto', function(Request $request, Response $response){
+  $this->post('/', \Producto::class . ':InsertarProducto');
+  $this->post('/baja/{id}', \Producto::class . ':BajaProducto');
+  $this->post('/modificar/{id}', \Producto::class . ':ModificarProducto');
 })->add(\MWusuarios::class . ':AccesoSocio');
-
 
 $app->group('/pedido', function(){
   $this->post('/', \Pedido::class . ':tomarPedido')->add(\MWusuarios::class . ':AccesoMozo'); //solo mozo
-  //$this->get('/baja/{id}', \Pedido::class . ':BajaPedido'); consultar si es necesaria la baja de pedidos o solo se cancela
-  //$this->post('/modificar/{id}', \Pedido::class . ':ModificarPedido'); consultar si se puede modificar un pedido
+  $this->get('/cancelar/{id}', \Pedido::class . ':CancelarPedido')->add(\MWusuarios::class . ':AccesoSocio'); 
   $this->get('/ver/', \Pedido::class . ':VerProductosPedidos');
   $this->post('/preparar/', \Pedido::class . ':PrepararPedido');
   $this->post('/fin/', \Pedido::class . ':PedidoListo');
   $this->get('/ver/{id}', \Pedido::class . ':VerPedidoCliente'); //usuarios no registrados
+  $this->get('/despachar/{id}', \Pedido::class . ':DespacharPedido')->(\MWusuarios::class . ':AccesoMozo');
+  $this->get('/cobrar/{id}', \Pedido::class . ':CobrarPedido')->(\MWusuarios::class . ':AccesoMozo');
 });
-
-//
-
-//consultar si solo puede cambiar el pedido a listo si ese usuario tomo ese pedido
 
 
 $app->group('/usuario', function(){
@@ -61,8 +58,12 @@ $app->group('/mesa', function(){
   $this->post('/', \Mesa::class . ':CrearMesa');
   $this->get('/baja/{id}', \Mesa::class . ':BajaMesa');
   $this->post('/modificar/{id}', \Mesa::class . ':ModificarMesa');
+  $this->get('/cerrar/{id}', \Mesa::class . ':CerrarMesa');
 })->add(\MWusuarios::class . ':AccesoSocio');
 
+$app->group('/encuesta', function(){ //para usuario sin registrar
+  $this->get('/{id_pedido}', \Encuesta::class . ':CargarEncuesta');
+});
 
 $app->add(\MWusuarios::class . ':AccesoUsuarioRegistrado');
 
