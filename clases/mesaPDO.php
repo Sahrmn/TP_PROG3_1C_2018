@@ -27,6 +27,7 @@ class mesaPDO
 			WHERE codigo = :id");	
 		$consulta->bindValue(':id',$id, PDO::PARAM_STR);		
 		$consulta->execute();
+		
 		return $consulta->rowCount();
 	}
 

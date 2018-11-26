@@ -15,13 +15,13 @@ class productoPDO
 		$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso(); 
 		$consulta = $objetoAccesoDato->RetornarConsulta("select * from productos WHERE id = '$id'");
 		$consulta->execute();			
-		return $consulta->fetch(PDO::FETCH_CLASS, "producto");
+		return $consulta->fetchAll(PDO::FETCH_CLASS, "producto");
 	}
 
 	public static function eliminar($id)
 	{
 		$objetoAccesoDato = AccesoDatos::dameUnObjetoAcceso();
-		$consulta = $objetoAccesoDato->RetornarConsulta('DELETE from productos WHERE id = "$id"');
+		$consulta = $objetoAccesoDato->RetornarConsulta("DELETE from productos WHERE id = '$id'");
 		$consulta->execute();
 		return $consulta->rowCount();
 	}

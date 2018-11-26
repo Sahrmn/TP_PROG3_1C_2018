@@ -62,9 +62,21 @@ class MWusuarios
 		else
 		{
 			//solo si se quiere logear, pasa
-			if($request->isPost() && $request->getUri()->getPath() == 'login/')
+			if($request->isPost())
 			{
-				$nueva = $next($request, $response);		
+				$path = $request->getUri()->getPath();
+				$path = explode('/', $path);
+				
+				if ($request->getUri()->getPath() == 'login/' || $path[0] == 'encuesta') {
+					
+					$nueva = $next($request, $response);		
+				}
+				else
+				{
+					$objDelaRespuesta->respuesta = "Solo usuarios registrados";
+					$nueva = $response->withJson($objDelaRespuesta, 401);
+				}
+
 			}
 			//si es un usuario no registrado (cliente) y quiere ver el estado de su pedido -> pasa
 			else if($request->isGet())// && $request->getUri()->getPath() == '/pedido/ver/')
@@ -74,6 +86,11 @@ class MWusuarios
 				
 				if ($path[0] == 'pedido/ver/') {
 					$nueva = $next($request, $response);		
+				}
+				else
+				{
+					$objDelaRespuesta->respuesta = "Solo usuarios registrados";
+					$nueva = $response->withJson($objDelaRespuesta, 401);
 				}
 			}
 			else

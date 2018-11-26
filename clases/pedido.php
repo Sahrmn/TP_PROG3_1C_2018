@@ -142,7 +142,7 @@ class Pedido
                 }
             }
         }
-        $productosEnBD = producto::traerProductos();
+        $productosEnBD = productoPDO::traerProductos();
         $productosDevueltos = array();
         switch ($tipo) {
             case 'cocinero':
@@ -232,13 +232,13 @@ class Pedido
                     $tiempo = rand(5, 15)*$cantidad;
                     break;
             }
-            $tiempo_demora = rand(5, 20)*$cantidad
+            $tiempo_demora = rand(5, 10)*$cantidad;
 
             $estado_pedido = "En preparacion";
 
             //guardo tiempo en el tiempo_preparacion de pedido_producto
             //actualizo estado del pedido en bd
-            if(pedido_producto::ModificarPedidoProducto($id_pedido, $id_producto, $estado, $tiempo, $tiempo_preparacion) > 0 && pedidoPDO::ModificarEstadoPedidoBD($id_pedido, $estado_pedido) > 0)
+            if(pedido_producto::ModificarPedidoProducto($id_pedido, $id_producto, $estado, $tiempo, $tiempo_demora) > 0 && pedidoPDO::ModificarEstadoPedidoBD($id_pedido, $estado_pedido) > 0)
             {
                 $nueva->respuesta = "Pedido en preparacion";
                 $nueva = $response->withJson($nueva, 200);
@@ -382,7 +382,7 @@ class Pedido
         if (isset($args['id']) != null) {
             $id_pedido = $args['id'];
             $pedido = pedidoPDO::traerUnPedido($id_pedido);
-            $codigo_mesa = $pedido->codigo_mesa;
+            $codigo_mesa = $pedido[0]->codigo_mesa;
 
             if (mesaPDO::ModificarEstado($codigo_mesa, "Clientes comiendo") != null) {
                 $retorno->respuesta = "Pedido despachado.";
@@ -410,13 +410,15 @@ class Pedido
             $pp = pedido_producto::traerPedidosProductos();
             for ($i=0; $i < count($pp); $i++) { 
                 if ($pp[$i]->id_pedido == $id_pedido) {
-                    $prod = producto::traerUno($pp[$i]->id_producto);
-                    $sumatoria += $prod->precio * $pp[$i]->cantidad;
+                    $prod = productoPDO::traerUno($pp[$i]->id_producto);
+                    $prod1 = $prod[0];
+                    $sumatoria += ($prod1->precio * $pp[$i]->cantidad);
                 }
             }
             //cambio estado de la mesa
             $pedido = pedidoPDO::traerUnPedido($id_pedido);
-            if (mesaPDO::ModificarEstado($pedido->codigo_mesa, "Clientes pagando") == null) {
+            
+            if (mesaPDO::ModificarEstado($pedido[0]->codigo_mesa, "Clientes pagando") == null) {
                 throw new Exception("No se pudo guardar", 500);
             }
 

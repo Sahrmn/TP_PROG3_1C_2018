@@ -10,6 +10,7 @@ class Producto
 	public $precio;
 	public $precio_compra;
 	public $atendido_por; //bartender, cocinero, mozo, etc.
+	public $foto;
 
 	public function __construct($nom = null, $precio = null, $precioc = null, $atendido = null)
 	{
@@ -33,11 +34,12 @@ class Producto
 	        $consulta =$objetoAccesoDato->RetornarConsulta("INSERT into productos (nombre, precio, precio_compra, atendido_por) VALUES('$prod->nombre','$prod->precio', '$prod->precio_compra', '$prod->atendido_por')");
 			$consulta->execute();	
 			$ultimoId = $objetoAccesoDato->RetornarUltimoIdInsertado();
+			
 			//verifico si existe foto
         	if($request->getUploadedFiles() != null)
         	{
         		$archivo = $request->getUploadedFiles();
-        		if(isset($archivo['foto']))
+        		if(isset($archivo['foto']) != null)
         		{
         			$destino = "./fotos_productos/";
         			//creo carpeta si no existe
@@ -49,19 +51,19 @@ class Producto
         			$extension = $archivo['foto']->getClientFilename();
         			$extension = explode(".", $extension);
         			$extension = $extension[1];
-        			$pedido->foto = $nombre . "." . $extension;
+        			$prod->foto = $nombre . "." . $extension;
         			$archivo['foto']->moveTo($destino . $nombre . "." . $extension);
         		}
         	}
 
-			$newResponse = $request->withJson($ultimoId, 200);
+			$newResponse = $response->withJson($ultimoId, 200);
 			//return $objetoAccesoDato->RetornarUltimoIdInsertado();
 		}
 		else
 		{
 			$nueva = new stdclass();
         	$nueva->respuesta = "Faltan parametros o son incorrectos.";
-        	$newResponse = $request->withJson($nueva, 200);
+        	$newResponse = $response->withJson($nueva, 200);
         	return $newResponse;
 		}
 		return $newResponse;
@@ -71,9 +73,9 @@ class Producto
 	{
 		if (isset($args['id']) != null) {
 			$id_producto = $args['id'];
-			if (productoPDO::eliminar($id_producto) != null) {
+			if (productoPDO::eliminar($id_producto) > 0) {
 				$nueva->respuesta = "Producto eliminado.";
-        		$newResponse = $request->withJson($nueva, 200);		
+        		$newResponse = $response->withJson($nueva, 200);		
 			}
 			else
 			{
@@ -83,7 +85,7 @@ class Producto
 		else
 		{
 			$nueva->respuesta = "Id necesario.";
-        	$newResponse = $request->withJson($nueva, 200);
+        	$newResponse = $response->withJson($nueva, 200);
 		}
 		return $newResponse;
 	}
@@ -91,25 +93,27 @@ class Producto
 	public static function ModificarProducto($request, $response, $args)
 	{
 		$param = $request->getParsedBody();
+
 		if (isset($args['id']) != null) {
-			$prod = productoPDO::traerUno($args['id'])
+			$prod = productoPDO::traerUno($args['id']);
 			if ($prod != null) {
+				$product = $prod[0];
 				if (isset($param['nombre'])) {
-					$prod->nombre = $param['nombre'];
+					$product->nombre = $param['nombre'];
 				}
-				if (isset($param['precio'])) {
-					$prod->precio = $param['precio'];	
+				if (isset($param['precio_venta'])) {
+					$product->precio = $param['precio_venta'];	
 				}
 				if (isset($param['precio_compra'])) {
-					$prod->precio_compra = $param['precio_compra'];
+					$product->precio_compra = $param['precio_compra'];
 				}
 				if (isset($param['atendido_por'])) {
-					$prod->atendido_por = $param['atendido_por'];
+					$product->atendido_por = $param['atendido_por'];
 				}
 				//guardo
-				if (productoPDO::modificar($prod) != null) {
+				if (productoPDO::modificar($product) != null) {
 					$nueva->respuesta = "Producto modificado.";
-        			$newResponse = $request->withJson($nueva, 200);	
+        			$newResponse = $response->withJson($nueva, 200);	
 				}
 				else
 				{
@@ -119,13 +123,13 @@ class Producto
 			else
 			{
 				$nueva->respuesta = "No existe el producto.";
-        		$newResponse = $request->withJson($nueva, 200);		
+        		$newResponse = $response->withJson($nueva, 200);		
 			}
 		}
 		else
 		{
 			$nueva->respuesta = "Id necesario.";
-        	$newResponse = $request->withJson($nueva, 200);
+        	$newResponse = $response->withJson($nueva, 200);
 		}
 		return $newResponse;
 	}

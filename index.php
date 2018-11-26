@@ -8,9 +8,11 @@ require_once './clases/AccesoDatos.php';
 require_once './clases/AutentificadorJWT.php';
 require_once './clases/usuario.php';
 require_once './clases/encuesta.php';
+require_once './clases/encuestaPDO.php';
 require_once './clases/mesa.php';
 require_once './clases/pedido.php';
 require_once './clases/producto.php';
+require_once './clases/productoPDO.php';
 require_once './clases/pedido_producto.php';
 require_once './middleware/MWusuarios.php';
 require_once './middleware/MWLog.php';
@@ -28,9 +30,9 @@ $app->post('/login/', function (Request $request, Response $response) {
 });
 
 
-$app->group('/producto', function(Request $request, Response $response){
+$app->group('/producto', function(){
   $this->post('/', \Producto::class . ':InsertarProducto');
-  $this->post('/baja/{id}', \Producto::class . ':BajaProducto');
+  $this->get('/baja/{id}', \Producto::class . ':BajaProducto');
   $this->post('/modificar/{id}', \Producto::class . ':ModificarProducto');
 })->add(\MWusuarios::class . ':AccesoSocio');
 
@@ -41,8 +43,8 @@ $app->group('/pedido', function(){
   $this->post('/preparar/', \Pedido::class . ':PrepararPedido');
   $this->post('/fin/', \Pedido::class . ':PedidoListo');
   $this->get('/ver/{id}', \Pedido::class . ':VerPedidoCliente'); //usuarios no registrados
-  $this->get('/despachar/{id}', \Pedido::class . ':DespacharPedido')->(\MWusuarios::class . ':AccesoMozo');
-  $this->get('/cobrar/{id}', \Pedido::class . ':CobrarPedido')->(\MWusuarios::class . ':AccesoMozo');
+  $this->get('/despachar/{id}', \Pedido::class . ':DespacharPedido')->add(\MWusuarios::class . ':AccesoMozo');
+  $this->get('/cobrar/{id}', \Pedido::class . ':CobrarPedido')->add(\MWusuarios::class . ':AccesoMozo');
 });
 
 
@@ -62,7 +64,7 @@ $app->group('/mesa', function(){
 })->add(\MWusuarios::class . ':AccesoSocio');
 
 $app->group('/encuesta', function(){ //para usuario sin registrar
-  $this->get('/{id_pedido}', \Encuesta::class . ':CargarEncuesta');
+  $this->post('/{id_pedido}', \Encuesta::class . ':CargarEncuesta');
 });
 
 $app->add(\MWusuarios::class . ':AccesoUsuarioRegistrado');

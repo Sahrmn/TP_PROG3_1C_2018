@@ -76,6 +76,7 @@ class Mesa
 	{
 		if(isset($args['id']) != null)
 		{
+			$id = $args['id'];
 			$respuesta = new stdclass();
 			if(mesaPDO::BorrarMesaBD($id) > 0) 
 			{	
